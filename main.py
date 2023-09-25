@@ -124,6 +124,21 @@ def check_ping():
     timer()
     run()
  
+def save_robots(url , robots_file):
+    console.print(f'Do wan\'t save {url[8:]} robots.txt ? (Y/n)')
+    save = console.input('~> ').lower()
+    if save == 'y':
+        isDir = os.path.isdir(url[8:])
+        if isDir == False:
+            os.mkdir(url[8:])
+        with open(f'./{url[8:]}/robots.txt' , 'a') as file:
+            file.write(robots_file) 
+    elif save == 'n':
+        pass
+    else:
+        clear_screen()
+        save_robots(url , robots_file)
+            
 def read_robots():
     clear_screen()
     print('send target url (example.com) : ')
@@ -136,14 +151,7 @@ def read_robots():
     if details['condition']:
         print(details['text'])
         robots_file = details['text']
-        console.print(f'Do wan\'t save {url[8:]} robots.txt ? (Y/n)')
-        save = console.input('~> ').lower()
-        if save == 'y':
-            isDir = os.path.isdir(url[8:])
-            if isDir == False:
-                os.mkdir(url[8:])
-            with open(f'./{url[8:]}/robots.txt' , 'a') as file:
-                file.write(robots_file)   
+        save_robots(url , robots_file)
     enter()
     
 def enter():
