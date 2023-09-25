@@ -2,6 +2,7 @@ import requests , os , platform , re , time
 from ping3 import verbose_ping
 from bs4 import BeautifulSoup
 from rich.console import Console
+from rich.syntax import Syntax
 console = Console()
 
 username = os.environ.get("USERNAME")
@@ -27,7 +28,7 @@ tools_list = '''
      [#d19d19][[/][#edd79f]3[/][#d19d19]][/] Read robots.txt         [#d19d19][[/][#edd79f]4[/][#d19d19]][/] Find Site Map
      [#074391][[/][#6b9ad6]5[/][#074391]][/] Website ping            [#074391][[/][#6b9ad6]6[/][#074391]][/] Domain to IP
      [#09ba68][[/][#82e8b8]7[/][#09ba68]][/] DNS lookup              [#09ba68][[/][#82e8b8]8[/][#09ba68]][/] Website ping
-     [#09ba68][[/][#82e8b8]9[/][#09ba68]][/] Find file by format
+     [#de8509][[/][#f0c78d]9[/][#de8509]][/] Find file by format
 
                        [#b30024][[/][#fc6583]99[/][#b30024]][/] Exit 
 '''
@@ -38,18 +39,15 @@ def clear_screen():
         os.system('cls')
     elif OS == 'Linux' or OS == 'Darwin':
         os.system('clear') 
-        
-def timer():      
+   
+def enter():
     print('')
-    tasks = [f"task {n}" for n in range(0, 1)]
-    with console.status("[bold blue]It will be deleted in 5 seconds.") as status:
-        while tasks:
-            task = tasks.pop(0)
-            time.sleep(5)
-    clear_screen()
+    console.input("Press [#568dd6 underline]Enter[/] to continue[#ffffff]...[/]")
+    run()
             
-def request(url):
-    print('Plase Wait...')
+def request(url , waiting = True):
+    if waiting:
+        print('Plase Wait...')
     try:
         header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/117.0'}
         response = requests.get(url , headers=header)
@@ -106,26 +104,31 @@ def wp_scan():
     else:
         console.print(f'[#b30024][[/]  [#fc6583]![/]   [#b30024]][/] Error {details["status"]}') 
     enter()
-  
-def check_ping():
-    clear_screen()
-    url = console.input('[[blue]-[/]] Enter URL [bold blue](example.com)[/] : ')
-    
-    if url[0:8] == 'https://':
-        url = url.replace('https://', '')
-    elif url[0:7] == 'http://':
-        url = url.replace('http://', '')
-        
-    cou = console.input('[[blue]-[/]] Enter the number of pings [bold blue](default 10)[/] : ') or 10
-    inter = console.input('[[blue]-[/]] Enter the interval between each ping [Second] [bold blue](default 3)[/] : ') or 3
-    print('')
-    verbose_ping(url , count=int(cou) , interval=int(inter))
-
-    timer()
-    run()
  
+def wp_admin():
+    clear_screen()
+    print('send target url (example.com) : ')
+    url = console.input(f'~> ')
+    clear_screen()
+    
+    if url[0:4] != 'http':
+        url = f'https://{url}'
+    
+    page_path = ['/admin' , '/wp-admin' , '/login' , '/wp-login']
+    for i in range(0 , len(page_path)):
+        details = request(f'{url}{page_path[i]}' , False) 
+        status_code = details['status']
+        
+        if status_code == 200:
+            text = details['text']
+            isExist = re.search("wp-login.php", text)
+            if isExist:
+                console.print(f'[#34eb67][[/]  [#8ceda7]{details["status"]}[/]  [#34eb67]][/] {url}{page_path[i]}')
+    enter()
+    
+    
 def save_robots(url , robots_file):
-    console.print(f'Do wan\'t save {url[8:]} robots.txt ? (Y/n)')
+    console.print(f'[#34eb67][[/]  [#8ceda7]![/]  [#34eb67]][/] Do you wan\'t save {url[8:]} [#34eb67 underline]robots.txt[/] ? (Y/n)')
     save = console.input('~> ').lower()
     if save == 'y':
         isDir = os.path.isdir(url[8:])
@@ -149,15 +152,39 @@ def read_robots():
     details = request(f'{url}/robots.txt')
     clear_screen()
     if details['condition']:
-        print(details['text'])
+        console.print(f'[#00ab7a][[/]  [#89fada]ok[/]  [#00ab7a]][/] Your target is : {url}')
+        print('')
+        time.sleep(2)
+        syntax = Syntax(details['text'], "text" , line_numbers=True)
+        console.print(syntax)
+        print('')
         robots_file = details['text']
         save_robots(url , robots_file)
+    else:
+        console.print(f'[#b30024][[/]  [#fc6583]![/]   [#b30024]][/] Error {details["status"]}')
     enter()
+  
+def check_ping():
+    clear_screen()
+    url = console.input('[[blue]-[/]] Enter URL [bold blue](example.com)[/] : ')
     
-def enter():
+    if url[0:8] == 'https://':
+        url = url.replace('https://', '')
+    elif url[0:7] == 'http://':
+        url = url.replace('http://', '')
+        
+    cou = console.input('[[blue]-[/]] Enter the number of pings [bold blue](default 10)[/] : ') or 10
+    inter = console.input('[[blue]-[/]] Enter the interval between each ping [Second] [bold blue](default 3)[/] : ') or 3
     print('')
-    console.input("Press [#568dd6 underline]Enter[/] to continue[#ffffff]...[/]")
-    run()
+    verbose_ping(url , count=int(cou) , interval=int(inter))
+
+    enter()
+      
+    
+def soon():
+    clear_screen()
+    print('Coming soon.')
+    enter()
     
 def run():
     clear_screen()
@@ -168,10 +195,22 @@ def run():
     
     if selected == 1:
         wp_scan()
-    elif selected == 9:
-        check_ping()
+    elif selected == 2:
+        wp_admin()
     elif selected == 3:
         read_robots()
+    elif selected == 4:
+        soon()
+    elif selected == 5:
+        soon()
+    elif selected == 6:
+        soon()
+    elif selected == 7:
+        soon()
+    elif selected == 8:
+        check_ping()
+    elif selected == 9:
+        soon()
     elif selected == 99:
         clear_screen()
         exit()
